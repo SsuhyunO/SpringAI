@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>1장_SpringAI_개요</title>
+    <style>
+        body {
+            width: 800px;
+            margin: 20px auto;
+        }
+
+        #chat-panel {
+            height: 500px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 80px;
+            box-sizing: border-box;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 10px;
+        }
+    </style>
+
+    <script>
+        async function submit(){
+            const chatPanel = document.getElementById('chat-panel');
+            const question = document.getElementById('question');
+
+            const response = await fetch('/ai/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'text/plain'
+                },
+                body: new URLSearchParams({
+                    question: question.value
+                })
+            });
+            const data = await response.text();
+
+            chatPanel.innerText = data;
+        }
+    </script>
+</head>
+<body>
+    <h3>1장_SpringAI_개요</h3>
+
+    <div id="chat-panel"></div>
+    <textarea id="question" placeholder="질문을 입력하세요."></textarea>
+    <button onclick="submit()">질문하기</button>
+</body>
+</html>
