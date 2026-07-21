@@ -1,0 +1,16 @@
+body {
+  font-family: '맑은 고딕', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+}
+
+.overlay-container {
+  display: inline-block;
+  position: relative;
+}
+
+.overlay-container canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: auto;
+  z-index: 10;
+}

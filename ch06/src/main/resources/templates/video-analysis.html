@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spring AI</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@latest"></script>
+  <link href="/css/springai.css" rel="stylesheet" />
+  <script src="/js/springai.js"></script>
+  <script>
+    // ##### 도큐먼트 로드 이벤트 핸들러 설정 #####
+    document.addEventListener("DOMContentLoaded", () => {
+      springai.vision.previewCamera("video");
+    });
+
+    // ##### 제출 버튼을 클릭했을 때 실행하는 함수 #####
+    function handleSubmit() {   
+      // 카메라 영상에서 프레임을 추출하기
+      springai.vision.captureFrame("video", (pngBlob) => {
+        //대화 하기
+        chat(pngBlob);
+      });
+    }
+
+    // ##### 채팅하는 함수 #####
+    async function chat(pngBlob) {
+      try {
+        //사용자 질문을 보여줄 엘리먼트를 채팅 패널에 추가하기
+        const question = document.getElementById("question").value;
+        springai.addUserQuestion(question, "chatPanel");
+
+        // 응답이 오기까지 스피너 보여주기
+        springai.setSpinner("spinner", true);  
+
+        //멀티파트 폼 구성하기
+        const formData = new FormData();
+        formData.append("question", question);
+        formData.append('attach', pngBlob, 'frame.png');        
+
+        // AJAX 요청
+        const response = await fetch('/ai/image-analysis', {
+          method: "post",
+          headers: {
+            'Accept': 'application/x-ndjson'
+          },
+          body: formData
+        });
+
+        // LLM 응답을 보여줄 엘리먼트를 채팅 패널에 추가하기
+        // 반환값인 uuid는 LLM 응답 메시지가 들어갈 부모 엘리먼트 ID 임  
+        const uuid = springai.addAnswerPlaceHolder("chatPanel");
+
+        // 텍스트 답변 출력하기
+        springai.printAnswerText(response.body, uuid, "chatPanel");
+      } catch (error) {
+        console.log(error);
+      } finally {
+        //스피너 숨기기
+        springai.setSpinner("spinner", false);
+      }
+    }  
+  </script>
+</head>
+
+<body>
+  <div class="d-flex flex-column vh-100">
+    <nav class="navbar justify-content-between">
+      <a href="/" class="navbar-brand ps-2">
+        <img src="/image/spring_ai_logo_with_text.svg" width="200" />
+      </a>
+      <div id="spinner" class="spinner-border text-success d-none me-3" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </nav>
+
+    <div id="chatPanel" class="flex-grow-1 container-fluid h-100 my-2" style="overflow-y:auto; overflow-x:hidden;">
+      <div class="d-flex justify-content-start border-bottom m-2">
+        <table>
+          <tr>
+            <td><img src="/image/assistant.png" width="50" /></td>
+            <td><span>질문을 올려주세요.</span></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    <div class="bg-secondary-subtle">
+      <!-- 입력 패널 ////////////////////////////////////////// -->
+      <div id="inputPanel">
+        <div class="d-flex justify-content-end m-2">
+          <table>
+            <tr>
+              <td></td>
+              <td><video id="video" src="" alt="미리보기 이미지" height="200" autoplay /></span></td>
+            </tr>
+          </table>
+        </div>
+        <div class="input-group p-2">
+          <span class="input-group-text">질문</span>
+          <input id="question" type="text" class="form-control">
+          <span class="input-group-text">
+            <button type="button" class="btn btn-primary" onclick="handleSubmit()">제출</button>
+          </span>
+        </div>
+      </div>
+      <!-- //////////////////////////////////////////////////// -->
+    </div>
+  </div>
+</body>
+
+</html>

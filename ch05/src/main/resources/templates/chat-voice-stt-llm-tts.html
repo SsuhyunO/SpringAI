@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spring AI</title>
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet" />
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.0/lame.min.js"></script>
+	<link href="/css/springai.css" rel="stylesheet" />
+	<script src="/js/springai.js"></script>
+  <script>
+    // 도큐먼트 로드 이벤트 핸들러 설정
+    document.addEventListener("DOMContentLoaded", () => {
+      startQuestion();
+    });
+
+    // 질문 시작하기
+    function startQuestion() {
+      // 마이크 초기화
+      springai.voice.initMic(handleVoice); 
+
+      // 음성 질문 스피커 애니메이션 시작
+      springai.voice.controlSpeakerAnimation("user-speaker", true);
+    }
+    
+    // 사용자의 음성이 입력되었을 경우 처리하는 함수
+    async function handleVoice(mp3Blob) {
+      try {
+        // 음성 질문 스피커 애니메이션 중지
+        springai.voice.controlSpeakerAnimation("user-speaker", false);
+
+        //스피너 보여주기
+        springai.setSpinner("spinner", true);
+
+        // 멀티파트 폼 구성
+        const formData = new FormData();
+        formData.append("question", mp3Blob, 'speech.mp3');
+
+        // 사용자 음성을 보내고 음성 답변을 받음
+        const response = await fetch("/ai/chat-voice-stt-llm-tts", {
+          method: "post",
+          headers: {
+            // Content-Type은 자동 생성되는 것을 사용해야함(파트 구분선 포함)
+            'Accept': 'application/octet-stream'
+          },
+          body: formData
+        });
+
+        // 음성 답변 스피커 애니메이션 시작
+        springai.voice.controlSpeakerAnimation("ai-speaker", true);
+
+        // 오디오 객체 얻기
+        const audioPlayer = document.getElementById("audioPlayer");
+        // 음성 답변 재생 완료 후 작업
+        audioPlayer.addEventListener("ended", () => {
+          // 음성 답변 스피커 애니메이션 중지
+          springai.voice.controlSpeakerAnimation("ai-speaker", false);
+          console.log("대화 종료");
+          // 음성 질문 다시 받기
+          startQuestion();
+          // 스트림 음성은 ended 핸들러가 여러번 실행될 수 있음
+          // 따라서 startQuestion()가 여러번 실행될 수 있어, 마이크가 동작하지 않음
+          // 핸들러가 한번만 실행하도록 { once: true } 반드시 추가
+        }, { once: true });   
+             
+        // 음성 답변 재생
+        springai.voice.playAudioFormStreamingData(response, audioPlayer);
+      } catch (error) {
+        console.log(error);
+      } finally {
+        //스피너 숨기기
+        springai.setSpinner("spinner", false);
+      }
+    }
+  </script>
+</head>
+
+<body>
+  <div class="d-flex flex-column vh-100">
+		<nav class="navbar justify-content-between">
+		  <a href="/" class="navbar-brand ps-2">
+		    <img src="/image/spring_ai_logo_with_text.svg" width="200" />
+		  </a>
+			<div id="spinner" class="spinner-border text-success d-none me-3" role="status">
+		    <span class="visually-hidden">Loading...</span>
+		  </div>
+		</nav>
+
+    <div id="chatPanel" class="flex-grow-1 container-fluid h-100 my-2" style="overflow-y:auto; overflow-x:hidden;">
+      <div class="d-flex justify-content-start border-bottom m-2">
+				<table>
+				  <tr>
+				    <td><img src="/image/assistant.png" width="50" /></td>
+				    <td><span>음성으로 질문을 해주세요.</span></td>
+				  </tr>
+				</table>
+        <audio id="audioPlayer" controls style="display:none;"></audio>
+      </div>
+
+      <div class="d-flex justify-content-start border-bottom m-2">
+        <!-- 왼쪽 50% 영역: AI Speaker -->
+        <div class="w-50 text-start d-flex align-items-center">
+          <img src="/image/assistant.png" width="50" />
+          <div id="ai-speaker" style="width: 30px; height: 30px; background: url('/image/speaker-green.png') no-repeat center center / contain;"></div>
+        </div>
+
+        <!-- 오른쪽 50% 영역: User Speaker -->
+        <div class="w-50 text-end d-flex align-items-center justify-content-end">
+          <img src="/image/user.png" width="30" class="me-1" />
+          <div id="user-speaker" style="width: 30px; height: 30px; background: url('/image/speaker-yellow.png') no-repeat center center / contain;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

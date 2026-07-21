@@ -1,0 +1,22 @@
+body {
+  font-family: '맑은 고딕', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+}
+
+.speakerPulse {
+  animation: speakerPulseAnimation 0.8s infinite;
+}
+
+@keyframes speakerPulseAnimation {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(0.7);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
